@@ -212,7 +212,7 @@ export function generatePlan(p: Profile, targetPaceSec: number, cuttingWeeks: nu
       if (trainIdx === -1) {
         return { dayLabel: label, isRest: true, session: sessionFor('rest', phase, p, targetPaceSec, 1) }
       }
-      let type = sessions[trainIdx]
+      const type = sessions[trainIdx]
       // 模拟赛替换当周混合训练日（最后一个训练日）
       if ((isHalfSim || isFullSim) && trainIdx === pattern.length - 1) {
         const s = sessionFor('simulation', phase, p, targetPaceSec, 1)

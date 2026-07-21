@@ -13,16 +13,15 @@ import { todayISO } from '@/lib/tracking'
 import { computeZones, effectiveHRmax, raceHRStrategy } from '@/lib/heartrate'
 
 export function useAppState() {
-  const [state, setState] = useState<AppState>(() => loadState())
+  // 首次使用时将计划开始日期默认为今天（在惰性初始化中完成并随下次保存持久化）
+  const [state, setState] = useState<AppState>(() => {
+    const s = loadState()
+    return s.planStartDate ? s : { ...s, planStartDate: todayISO() }
+  })
 
   useEffect(() => {
     saveState(state)
   }, [state])
-
-  // 首次使用时将计划开始日期默认为今天并持久化
-  useEffect(() => {
-    setState((prev) => (prev.planStartDate ? prev : { ...prev, planStartDate: todayISO() }))
-  }, [])
 
   const updateProfile = useCallback((patch: Partial<Profile>) => {
     setState((prev) => {
