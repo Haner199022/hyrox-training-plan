@@ -19,7 +19,17 @@ import { Slider } from '@/components/ui/slider'
 import { defaultSplits, totalSeconds } from '@/lib/hyrox'
 import { estimateSegmentSec, type GapItem } from '@/lib/raceModel'
 import { fmtHMS, fmtMS, fmtDelta } from '@/lib/time'
+import { ExerciseGif } from '@/components/ExerciseGif'
 import { cn } from '@/lib/utils'
+
+/** 站点 → 演示媒体（sledpush/sledpull/row 数据集无匹配，保持纯文本） */
+const STATION_MEDIA: Record<string, string> = {
+  skierg: 'skierg',
+  bbj: 'bbj',
+  farmers: 'farmers',
+  lunges: 'lunges',
+  wallballs: 'wallballs',
+}
 
 const SHORT_NAME: Record<string, string> = {
   skierg: 'SkiErg',
@@ -93,6 +103,7 @@ export function BreakdownSection(app: AppStateHook) {
           <CardContent className="divide-y p-0">
             {splits.map((s) => (
               <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                {s.kind === 'station' && <ExerciseGif mediaKey={STATION_MEDIA[s.id]} size={28} />}
                 <div className="w-40 shrink-0">
                   <div className="truncate text-sm font-medium">{s.name}</div>
                   {s.spec && (

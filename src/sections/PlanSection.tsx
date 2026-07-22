@@ -20,6 +20,7 @@ import { sessionKey, type SessionType, type WeekPlan } from '@/lib/plan'
 import { fmtPace } from '@/lib/time'
 import { SESSION_ZONE, type ZoneId } from '@/lib/heartrate'
 import { routineForSession } from '@/lib/recovery'
+import { ExerciseGif } from '@/components/ExerciseGif'
 import { cn } from '@/lib/utils'
 
 const TYPE_STYLE: Record<SessionType, { label: string; cls: string }> = {
@@ -213,6 +214,13 @@ export function PlanSection(app: AppStateHook) {
                       </div>
                     )}
                     <p className="text-[11px] leading-relaxed text-muted-foreground">{d.session.details}</p>
+                    {d.session.mediaKeys && d.session.mediaKeys.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        {d.session.mediaKeys.map((mk) => (
+                          <ExerciseGif key={mk} mediaKey={mk} size={44} />
+                        ))}
+                      </div>
+                    )}
 
                     {/* 拉伸与恢复面板 */}
                     <div className="border-t pt-2" onClick={(e) => e.stopPropagation()}>
@@ -239,6 +247,7 @@ export function PlanSection(app: AppStateHook) {
                                   onCheckedChange={() => toggleStretchStep(key, s.id)}
                                   className="mt-0.5 h-3.5 w-3.5"
                                 />
+                                {s.mediaKey && <ExerciseGif mediaKey={s.mediaKey} size={30} />}
                                 <span className="flex-1">
                                   <span
                                     className={cn(

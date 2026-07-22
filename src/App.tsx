@@ -92,6 +92,9 @@ export default function App() {
         <footer className="pb-8 pt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
           本工具的训练与减重建议为基于公开 HYROX 赛制与通用运动科学规则的估算，不构成医疗建议。
           如有健康疑虑请咨询专业医师或教练。
+          <br />
+          动作演示 © Gym visual — https://gymvisual.com/（180×180 授权使用）·
+          动作数据 © Hasan Emir Yıldırım（exercises-dataset，MIT License）
         </footer>
       </main>
     </div>

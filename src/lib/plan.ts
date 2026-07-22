@@ -27,6 +27,8 @@ export interface Session {
   durationMin: number
   intensity: string
   details: string
+  /** 本课涉及动作的演示媒体 key（exerciseMedia），可选 */
+  mediaKeys?: string[]
 }
 
 export interface DayPlan {
@@ -150,6 +152,10 @@ function sessionFor(
           phase === 'specific'
             ? '雪橇推/拉模拟（重雪橇或阻力带冲刺推）4 组、负重弓步 3×20m、壶铃农夫行走 3×40m、墙球 3×15。'
             : '六角杠硬拉或深蹲 4×6、罗马尼亚硬拉 3×8、推雪橇/腿推 4 组、平板支撑+Pallof 抗旋核心 3 组。',
+        mediaKeys:
+          phase === 'specific'
+            ? ['lunge-dumbbell', 'farmers', 'wallballs', 'squat-barbell-full']
+            : ['deadlift-trap-bar', 'squat-barbell-full', 'rdl-barbell', 'leg-press-45', 'plank-front', 'pallof-press'],
       }
     case 'hybrid':
       return {
@@ -163,6 +169,10 @@ function sessionFor(
             : '5 轮：跑 1000m @ 目标配速 ' +
               pace +
               ' → 立即做站点动作（划船 250m / 沙袋弓步 20m / 农夫行走 40m / 墙球 25 次轮换）。严格控制换项时间 ≤45 秒。',
+        mediaKeys:
+          phase === 'base'
+            ? ['skierg', 'bbj', 'wallballs']
+            : ['lunges', 'farmers', 'wallballs'],
       }
     case 'simulation':
       return {
@@ -171,6 +181,7 @@ function sessionFor(
         durationMin: cap,
         intensity: 'RPE 9 / 比赛配速',
         details: '',
+        mediaKeys: ['skierg', 'bbj', 'farmers', 'lunges', 'wallballs'],
       }
     case 'recovery':
       return {

@@ -42,7 +42,17 @@ import {
 } from '@/lib/raceday'
 import { fmtCN, raceDateOf } from '@/lib/tracking'
 import { fmtMS } from '@/lib/time'
+import { ExerciseGif } from '@/components/ExerciseGif'
 import { cn } from '@/lib/utils'
+
+/** 站点段 → 演示媒体（sledpush/sledpull/row 数据集无匹配，保持纯文本） */
+const STATION_MEDIA: Record<string, string> = {
+  skierg: 'skierg',
+  bbj: 'bbj',
+  farmers: 'farmers',
+  lunges: 'lunges',
+  wallballs: 'wallballs',
+}
 
 export function RaceDaySection(app: AppStateHook) {
   const {
@@ -331,6 +341,7 @@ export function RaceDaySection(app: AppStateHook) {
                     {i + 1}
                   </span>
                   <Checkbox checked={checked} onCheckedChange={() => toggleRaceCheck(key)} />
+                  <ExerciseGif mediaKey={STATION_MEDIA[r.id]} size={34} />
                   <div className="w-44 shrink-0">
                     <div className={cn('truncate text-sm font-medium', checked && 'text-muted-foreground line-through')}>
                       {r.name}

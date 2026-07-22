@@ -92,3 +92,9 @@ Pages 来源：`gh-pages` 分支 `/` 根目录。Vite `base` 已配置为 `/hyro
 2. （可选）你自己 GitHub 账号下的私密 Gist
 
 公开源码仓库中不包含任何用户数据。训练与营养建议为通用运动科学估算，不构成医疗建议。
+
+## 致谢与许可
+
+- 动作演示媒体（`public/exercises/` 下的 GIF 与缩略图）：**© Gym visual — https://gymvisual.com/**，按 180×180 分辨率授权条款使用并保留署名。媒体不适用于 MIT 许可，其使用受 Gym visual 使用条款约束（https://gymvisual.com/content/3-terms-and-conditions-of-use）。
+- 动作数据（名称/步骤/肌群等多语言文本）：来自 [exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset)，© Hasan Emir Yıldırım，**MIT License**（许可文本见其仓库 LICENSE）。
+- 本应用自身的代码以 MIT 发布（如另行声明则以其为准）。
