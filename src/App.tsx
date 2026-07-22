@@ -6,6 +6,7 @@ import { HeartRateSection } from '@/sections/HeartRateSection'
 import { BreakdownSection } from '@/sections/BreakdownSection'
 import { NutritionSection } from '@/sections/NutritionSection'
 import { TrackingSection } from '@/sections/TrackingSection'
+import { HealthSection } from '@/sections/HealthSection'
 import { RaceDaySection } from '@/sections/RaceDaySection'
 import { PlanSection } from '@/sections/PlanSection'
 import { DataSection } from '@/sections/DataSection'
@@ -79,6 +80,8 @@ export default function App() {
         <NutritionSection {...app} />
         <Separator />
         <TrackingSection {...app} />
+        <Separator />
+        <HealthSection {...app} />
         <Separator />
         <RaceDaySection {...app} />
         <Separator />

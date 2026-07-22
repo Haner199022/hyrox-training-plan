@@ -11,6 +11,7 @@ import { targetPaceSecPerKm } from '@/lib/hyrox'
 import { calorieTarget, macrosFor, fuelingGuide, raceWeekStrategy } from '@/lib/nutrition'
 import { todayISO } from '@/lib/tracking'
 import { computeZones, effectiveHRmax, raceHRStrategy } from '@/lib/heartrate'
+import { applyHealthAutoActions, pullHealth } from '@/lib/health'
 import {
   SyncError,
   clearSyncToken,
@@ -70,6 +71,28 @@ export function useAppState() {
   // ── 启动时拉取（仅一次）──
   const stateRef = useRef(state)
   stateRef.current = state
+
+  /** 拉取 Apple 健康数据并执行幂等自动动作（静默失败：文件不存在/网络问题不影响主流程） */
+  const pullHealthNow = useCallback(async () => {
+    const token = loadSyncToken()
+    const { gistId, enabled } = stateRef.current.sync
+    if (!token || !enabled || !gistId) return
+    try {
+      const payload = await pullHealth(token, gistId)
+      if (!payload) return
+      setState((prev) => {
+        if (JSON.stringify(prev.health.payload) === JSON.stringify(payload)) return prev
+        const withPayload: AppState = {
+          ...prev,
+          health: { ...prev.health, payload, lastPulledAt: new Date().toISOString() },
+        }
+        return applyHealthAutoActions(withPayload)
+      })
+    } catch {
+      // 健康文件缺失或网络问题：静默，下次拉取重试
+    }
+  }, [])
+
   useEffect(() => {
     const token = loadSyncToken()
     const sync = stateRef.current.sync
@@ -91,6 +114,8 @@ export function useAppState() {
         } else {
           setSyncStatus({ phase: 'ok', login })
         }
+        // 主数据拉取成功后，顺带拉取健康数据
+        void pullHealthNow()
       } catch (e) {
         if (!cancelled) setSyncStatus({ phase: 'error', message: syncErrorMessage(e) })
       }
@@ -188,7 +213,8 @@ export function useAppState() {
       // 拉取失败不阻塞启用
     }
     setSyncStatus({ phase: 'ok', login, note: '云同步已启用' })
-  }, [])
+    void pullHealthNow()
+  }, [pullHealthNow])
 
   const disableSync = useCallback(() => {
     clearSyncToken()
@@ -430,6 +456,8 @@ export function useAppState() {
     stretchDone: state.stretchDone,
     syncInfo: state.sync,
     syncStatus,
+    health: state.health,
+    refreshHealth: pullHealthNow,
     updateProfile,
     updateSegment,
     rescaleSplits,

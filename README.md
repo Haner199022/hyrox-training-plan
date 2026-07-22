@@ -29,6 +29,41 @@
 - 冲突规则：多设备同时修改时以最后同步为准（last-write-wins）
 - 也可随时用「断开同步」清除本地 Token 与关联（本地与云端数据均保留）
 
+## Apple 健康同步指南（iPhone 快捷指令）
+
+Apple 健康没有 Web API，因此采用「快捷指令 → 私密 Gist」的桥接方案：iPhone 上的快捷指令定时把健康数据写入**同一个私密 Gist 的第二个文件** `hyrox-health-data.json`（主数据文件 `hyrox-training-data.json` 不受影响），应用打开时自动拉取并展示，还会自动执行两个幂等动作：
+
+1. 某天的体重自动写入「体重曲线」（不重复覆盖手动记录）
+2. 某天有 Apple Watch 体能训练且时长 ≥ 计划课时 60%、类型匹配（跑步类↔跑步课，其他↔力量/混合课）→ 自动打卡当天训练
+
+**快捷指令配置步骤：**
+
+1. 在应用内启用云同步（拿到你自己的 Gist，记下 Gist ID——浏览器地址栏打开 `https://gist.github.com/` 可查看，或在开发者工具中查看）
+2. iPhone「快捷指令」新建指令，依次添加：
+   - 「查找健康样本」：分别取 步数 / 活动能量 / 静息心率 / 心率变异性 / 睡眠 / 体重 / 体能训练（按当天）
+   - 「获取文本」：按下述 schema 拼装 JSON
+   - 「获取 URL 内容」：方法 PATCH，URL `https://api.github.com/gists/<你的GistID>`，请求头 `Authorization: Bearer <你的Token>`、`Accept: application/vnd.github+json`，请求体 JSON：
+     `{ "files": { "hyrox-health-data.json": { "content": "<上一步的 JSON 字符串>" } } }`
+3. 「自动化」中设为每天定时运行（如 22:30 与晨起后）
+
+**健康数据 schema**（任何字段都可缺失，应用端容忍解析）：
+
+```json
+{
+  "app": "hyrox-bj-plan-health",
+  "updatedAt": "<ISO 8601>",
+  "days": {
+    "2026-07-22": {
+      "steps": 8432, "activeKcal": 512, "restingHr": 57, "hrv": 62,
+      "sleepHours": 7.2, "weightKg": 74.8,
+      "workouts": [{ "type": "跑步", "start": "<ISO>", "minutes": 42, "avgHr": 158, "kcal": 480 }]
+    }
+  }
+}
+```
+
+> Token 只保存在你的 iPhone 快捷指令与浏览器中，不会进入任何公开位置。
+
 ## 本地开发
 
 ```bash

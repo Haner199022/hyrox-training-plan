@@ -89,6 +89,13 @@ async function api<T>(token: string, method: string, path: string, body?: unknow
   return (await res.json()) as T
 }
 
+/** 供其他模块（如健康数据拉取）复用的 GET 封装 */
+export async function ghGet<T>(token: string, path: string): Promise<T> {
+  return api<T>(token, 'GET', path)
+}
+
+export const GIST_HEALTH_FILENAME = 'hyrox-health-data.json'
+
 // ── 同步载荷 ─────────────────────────────────────────────
 
 export interface SyncPayload {

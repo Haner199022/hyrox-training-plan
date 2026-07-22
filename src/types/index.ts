@@ -83,8 +83,51 @@ export const DEFAULT_SYNC: SyncInfo = {
   lastSyncedAt: null,
 }
 
+// ── Apple 健康数据（由 iOS 快捷指令推送到同一私密 Gist 的第二文件）──
+
+export interface HealthWorkout {
+  type: string
+  start?: string
+  minutes?: number
+  avgHr?: number
+  kcal?: number
+}
+
+export interface HealthDay {
+  steps?: number
+  activeKcal?: number
+  restingHr?: number
+  hrv?: number
+  sleepHours?: number
+  weightKg?: number
+  workouts?: HealthWorkout[]
+}
+
+export interface HealthPayload {
+  app: 'hyrox-bj-plan-health'
+  updatedAt: string
+  days: Record<string, HealthDay>
+}
+
+export interface HealthState {
+  /** 最近一次拉取的健康数据（应用只拉取，永不推送该文件） */
+  payload: HealthPayload | null
+  lastPulledAt: string | null
+  /** 已自动写入体重记录的日期（幂等防重） */
+  appliedWeightDates: string[]
+  /** 已自动打卡的训练 dayKey 列表（幂等防重） */
+  autoLoggedWorkoutKeys: string[]
+}
+
+export const DEFAULT_HEALTH: HealthState = {
+  payload: null,
+  lastPulledAt: null,
+  appliedWeightDates: [],
+  autoLoggedWorkoutKeys: [],
+}
+
 export interface AppState {
-  version: 6
+  version: 7
   profile: Profile
   splits: Segment[]
   completed: CompletionMap
@@ -111,6 +154,8 @@ export interface AppState {
   stretchDone: Record<string, string[]>
   /** 云同步元信息 */
   sync: SyncInfo
+  /** Apple 健康数据 */
+  health: HealthState
 }
 
 export const DEFAULT_PROFILE: Profile = {
