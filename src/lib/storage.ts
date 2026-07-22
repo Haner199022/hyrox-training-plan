@@ -3,12 +3,14 @@ import {
   DEFAULT_EXCLUDED_FOODS,
   DEFAULT_NUTRITION,
   DEFAULT_PROFILE,
+  DEFAULT_SYNC,
   type AppState,
   type NutritionPrefs,
 } from '@/types'
 import { defaultSplits } from './hyrox'
 
-export const STORAGE_KEY = 'hyrox-bj-plan:v5'
+export const STORAGE_KEY = 'hyrox-bj-plan:v6'
+const LEGACY_KEY_V5 = 'hyrox-bj-plan:v5'
 const LEGACY_KEY_V4 = 'hyrox-bj-plan:v4'
 const LEGACY_KEY_V3 = 'hyrox-bj-plan:v3'
 const LEGACY_KEY_V2 = 'hyrox-bj-plan:v2'
@@ -16,7 +18,7 @@ const LEGACY_KEY_V1 = 'hyrox-bj-plan:v1'
 
 export function defaultState(): AppState {
   return {
-    version: 5,
+    version: 6,
     profile: { ...DEFAULT_PROFILE },
     splits: defaultSplits(DEFAULT_PROFILE.sex, DEFAULT_PROFILE.division),
     completed: {},
@@ -31,17 +33,18 @@ export function defaultState(): AppState {
     hrMaxOverride: null,
     restingHr: null,
     stretchDone: {},
+    sync: { ...DEFAULT_SYNC },
   }
 }
 
 type AnyState = Partial<AppState> & { version?: number }
 
-/** 将任意旧版本（v1–v5）数据规范化为当前 v5 结构 */
+/** 将任意旧版本（v1–v6）数据规范化为当前 v6 结构 */
 function sanitize(parsed: AnyState): AppState {
   const profile = { ...DEFAULT_PROFILE, ...(parsed.profile ?? {}) }
   const nutrition: NutritionPrefs = { ...DEFAULT_NUTRITION, ...(parsed.nutrition ?? {}) }
   return {
-    version: 5,
+    version: 6,
     profile,
     splits:
       Array.isArray(parsed.splits) && parsed.splits.length === 17
@@ -64,12 +67,14 @@ function sanitize(parsed: AnyState): AppState {
     hrMaxOverride: typeof parsed.hrMaxOverride === 'number' ? parsed.hrMaxOverride : null,
     restingHr: typeof parsed.restingHr === 'number' ? parsed.restingHr : null,
     stretchDone: parsed.stretchDone ?? {},
+    // v5 → v6：云同步默认未启用
+    sync: parsed.sync ? { ...DEFAULT_SYNC, ...parsed.sync } : { ...DEFAULT_SYNC },
   }
 }
 
 export function loadState(): AppState {
   try {
-    for (const key of [STORAGE_KEY, LEGACY_KEY_V4, LEGACY_KEY_V3, LEGACY_KEY_V2, LEGACY_KEY_V1]) {
+    for (const key of [STORAGE_KEY, LEGACY_KEY_V5, LEGACY_KEY_V4, LEGACY_KEY_V3, LEGACY_KEY_V2, LEGACY_KEY_V1]) {
       const raw = localStorage.getItem(key)
       if (!raw) continue
       const parsed = JSON.parse(raw) as AnyState
@@ -103,6 +108,7 @@ export function saveState(state: AppState): void {
 export function clearState(): void {
   try {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(LEGACY_KEY_V5)
     localStorage.removeItem(LEGACY_KEY_V4)
     localStorage.removeItem(LEGACY_KEY_V3)
     localStorage.removeItem(LEGACY_KEY_V2)
@@ -112,9 +118,10 @@ export function clearState(): void {
   }
 }
 
-/** 导出：当前状态序列化为 JSON 字符串 */
+/** 导出：当前状态序列化为 JSON 字符串（剥离云同步元信息，导出文件不含任何云端标识/凭据） */
 export function exportState(state: AppState): string {
-  return JSON.stringify(state, null, 2)
+  const safe: AppState = { ...state, sync: { ...DEFAULT_SYNC } }
+  return JSON.stringify(safe, null, 2)
 }
 
 /**

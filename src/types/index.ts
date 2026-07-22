@@ -70,8 +70,21 @@ export interface WeightEntry {
 /** 默认排除的食材（用户声明不吃牛羊肉；数据库中无羊肉项） */
 export const DEFAULT_EXCLUDED_FOODS: string[] = ['beef']
 
+/** 云同步元信息（token 永远不在 AppState 中，单独存 localStorage） */
+export interface SyncInfo {
+  gistId: string | null
+  enabled: boolean
+  lastSyncedAt: string | null
+}
+
+export const DEFAULT_SYNC: SyncInfo = {
+  gistId: null,
+  enabled: false,
+  lastSyncedAt: null,
+}
+
 export interface AppState {
-  version: 5
+  version: 6
   profile: Profile
   splits: Segment[]
   completed: CompletionMap
@@ -96,6 +109,8 @@ export interface AppState {
   restingHr: number | null
   /** 每日拉伸/恢复步骤完成：dayKey("w{n}-d{i}") → 已完成步骤 id 列表 */
   stretchDone: Record<string, string[]>
+  /** 云同步元信息 */
+  sync: SyncInfo
 }
 
 export const DEFAULT_PROFILE: Profile = {

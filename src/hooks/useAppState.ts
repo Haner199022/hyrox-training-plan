@@ -1,8 +1,8 @@
-// 全局状态 Hook：profile / splits / completed + 派生数据
-import { useCallback, useEffect, useMemo, useState } from 'react'
+// 全局状态 Hook：profile / splits / completed + 派生数据 + Gist 云同步
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AppState, NutritionPrefs, Profile, Segment, WeightEntry } from '@/types'
-import { DEFAULT_EXCLUDED_FOODS, DEFAULT_NUTRITION } from '@/types'
-import { clearState, defaultState, loadState, saveState } from '@/lib/storage'
+import { DEFAULT_EXCLUDED_FOODS, DEFAULT_NUTRITION, DEFAULT_SYNC } from '@/types'
+import { clearState, defaultState, importState, loadState, saveState } from '@/lib/storage'
 import { refreshSpecs, scaleSplits } from '@/lib/hyrox'
 import { estimateRace, assessFeasibility } from '@/lib/raceModel'
 import { weightVerdict, weightTrajectory } from '@/lib/body'
@@ -11,6 +11,25 @@ import { targetPaceSecPerKm } from '@/lib/hyrox'
 import { calorieTarget, macrosFor, fuelingGuide, raceWeekStrategy } from '@/lib/nutrition'
 import { todayISO } from '@/lib/tracking'
 import { computeZones, effectiveHRmax, raceHRStrategy } from '@/lib/heartrate'
+import {
+  SyncError,
+  clearSyncToken,
+  findOrCreateGist,
+  loadSyncToken,
+  pullState,
+  pushState,
+  saveSyncToken,
+  syncErrorMessage,
+  validateToken,
+} from '@/lib/gistSync'
+
+export interface SyncStatus {
+  phase: 'off' | 'idle' | 'syncing' | 'ok' | 'error'
+  message?: string
+  login?: string
+  /** 最近一次云端操作结果的提示（如“已从云端同步”） */
+  note?: string
+}
 
 export function useAppState() {
   // 首次使用时将计划开始日期默认为今天（在惰性初始化中完成并随下次保存持久化）
@@ -18,10 +37,186 @@ export function useAppState() {
     const s = loadState()
     return s.planStartDate ? s : { ...s, planStartDate: todayISO() }
   })
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({ phase: 'idle' })
+
+  // 已推送/已应用的状态引用：等于它时跳过自动推送，防止“推送后写回 lastSyncedAt”造成循环
+  const lastSyncedRef = useRef<AppState>(state)
 
   useEffect(() => {
     saveState(state)
   }, [state])
+
+  /** 应用远端载荷到本地（updatedAt 较新时），返回是否应用了远端数据 */
+  const applyRemoteIfNewer = useCallback(
+    (payloadStateJson: string, remoteAt: string) => {
+      try {
+        const remote = importState(payloadStateJson)
+        const localAt = state.sync.lastSyncedAt
+        if (localAt && remoteAt <= localAt) return false
+        const next: AppState = {
+          ...remote,
+          sync: { gistId: state.sync.gistId, enabled: true, lastSyncedAt: remoteAt },
+        }
+        lastSyncedRef.current = next
+        setState(next)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [state.sync.gistId, state.sync.lastSyncedAt],
+  )
+
+  // ── 启动时拉取（仅一次）──
+  const stateRef = useRef(state)
+  stateRef.current = state
+  useEffect(() => {
+    const token = loadSyncToken()
+    const sync = stateRef.current.sync
+    if (!token || !sync.enabled || !sync.gistId) return
+    let cancelled = false
+    setSyncStatus({ phase: 'syncing' })
+    ;(async () => {
+      try {
+        const login = await validateToken(token)
+        const payload = await pullState(token, sync.gistId as string)
+        if (cancelled) return
+        if (payload) {
+          const applied = applyRemoteIfNewer(JSON.stringify(payload.state), payload.updatedAt)
+          setSyncStatus({
+            phase: 'ok',
+            login,
+            note: applied ? '已从云端同步' : undefined,
+          })
+        } else {
+          setSyncStatus({ phase: 'ok', login })
+        }
+      } catch (e) {
+        if (!cancelled) setSyncStatus({ phase: 'error', message: syncErrorMessage(e) })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── 变更后防抖自动推送 ──
+  useEffect(() => {
+    if (state === lastSyncedRef.current) return
+    const token = loadSyncToken()
+    if (!token || !state.sync.enabled || !state.sync.gistId) return
+    const gistId = state.sync.gistId
+    setSyncStatus((s) => ({ ...s, phase: 'syncing' }))
+    const timer = setTimeout(() => {
+      ;(async () => {
+        try {
+          const payload = await pushState(token, gistId, state)
+          setState((prev) => {
+            const next: AppState = {
+              ...prev,
+              sync: { ...prev.sync, lastSyncedAt: payload.updatedAt },
+            }
+            lastSyncedRef.current = next
+            return next
+          })
+          setSyncStatus((s) => ({ ...s, phase: 'ok', note: undefined }))
+        } catch (e) {
+          // gist 被删 → 自动重建一次并重试
+          if (e instanceof SyncError && e.kind === 'notfound') {
+            try {
+              const newId = await findOrCreateGist(token, state)
+              const payload = await pushState(token, newId, state)
+              setState((prev) => {
+                const next: AppState = {
+                  ...prev,
+                  sync: { ...prev.sync, gistId: newId, lastSyncedAt: payload.updatedAt },
+                }
+                lastSyncedRef.current = next
+                return next
+              })
+              setSyncStatus((s) => ({ ...s, phase: 'ok', note: '云端数据已重建' }))
+              return
+            } catch (e2) {
+              setSyncStatus({ phase: 'error', message: syncErrorMessage(e2) })
+              return
+            }
+          }
+          setSyncStatus({ phase: 'error', message: syncErrorMessage(e) })
+        }
+      })()
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [state])
+
+  // ── 同步操作 ──
+  const enableSync = useCallback(async (token: string): Promise<void> => {
+    const trimmed = token.trim()
+    if (!trimmed) throw new SyncError('unauthorized', 'empty token')
+    setSyncStatus({ phase: 'syncing' })
+    const login = await validateToken(trimmed)
+    const gistId = await findOrCreateGist(trimmed, stateRef.current)
+    saveSyncToken(trimmed)
+    setState((prev) => {
+      const next: AppState = {
+        ...prev,
+        sync: { gistId, enabled: true, lastSyncedAt: prev.sync.lastSyncedAt },
+      }
+      return next
+    })
+    // 若 gist 已存在且有数据，尝试拉取较新的远端数据
+    try {
+      const payload = await pullState(trimmed, gistId)
+      if (payload) {
+        setState((prev) => {
+          const localAt = prev.sync.lastSyncedAt
+          if (localAt && payload.updatedAt <= localAt) return prev
+          try {
+            const remote = importState(JSON.stringify(payload.state))
+            const next: AppState = {
+              ...remote,
+              sync: { gistId, enabled: true, lastSyncedAt: payload.updatedAt },
+            }
+            lastSyncedRef.current = next
+            return next
+          } catch {
+            return prev
+          }
+        })
+      }
+    } catch {
+      // 拉取失败不阻塞启用
+    }
+    setSyncStatus({ phase: 'ok', login, note: '云同步已启用' })
+  }, [])
+
+  const disableSync = useCallback(() => {
+    clearSyncToken()
+    setState((prev) => ({ ...prev, sync: { ...DEFAULT_SYNC } }))
+    setSyncStatus({ phase: 'off' })
+  }, [])
+
+  const syncNow = useCallback(async (): Promise<void> => {
+    const token = loadSyncToken()
+    const gistId = stateRef.current.sync.gistId
+    if (!token || !gistId) throw new SyncError('unauthorized', 'sync not enabled')
+    setSyncStatus((s) => ({ ...s, phase: 'syncing' }))
+    try {
+      const payload = await pushState(token, gistId, stateRef.current)
+      setState((prev) => {
+        const next: AppState = {
+          ...prev,
+          sync: { ...prev.sync, lastSyncedAt: payload.updatedAt },
+        }
+        lastSyncedRef.current = next
+        return next
+      })
+      setSyncStatus((s) => ({ ...s, phase: 'ok', note: '已同步到云端' }))
+    } catch (e) {
+      setSyncStatus({ phase: 'error', message: syncErrorMessage(e) })
+      throw e
+    }
+  }, [])
 
   const updateProfile = useCallback((patch: Partial<Profile>) => {
     setState((prev) => {
@@ -182,6 +377,8 @@ export function useAppState() {
 
   const resetAll = useCallback(() => {
     clearState()
+    clearSyncToken()
+    setSyncStatus({ phase: 'off' })
     setState(defaultState())
   }, [])
 
@@ -231,6 +428,8 @@ export function useAppState() {
     hrMaxOverride: state.hrMaxOverride,
     restingHr: state.restingHr,
     stretchDone: state.stretchDone,
+    syncInfo: state.sync,
+    syncStatus,
     updateProfile,
     updateSegment,
     rescaleSplits,
@@ -253,6 +452,9 @@ export function useAppState() {
     setRestingHr,
     toggleStretchStep,
     replaceState,
+    enableSync,
+    disableSync,
+    syncNow,
     resetAll,
     ...derived,
   }
