@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="zh_CN">
+ <ExportDate value="2026-07-23 09:00:00 +0800"/>
+ <Me HKDateOfBirth="1994-01-01" HKBiologicalSex="HKBiologicalSexMale"/>
+ <!-- 体重：kg 与 lb 两种单位，同日两条验证"取最新" -->
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="Watch" unit="kg" value="75.0" startDate="2026-07-20 07:00:00 +0800" endDate="2026-07-20 07:00:00 +0800"/>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="Scale" unit="lb" value="164.0" startDate="2026-07-20 21:00:00 +0800" endDate="2026-07-20 21:00:00 +0800"/>
+ <Record type="HKQuantityTypeIdentifierBodyMass" sourceName="Scale" unit="kg" value="74.6" startDate="2026-07-21 07:10:00 +0800" endDate="2026-07-21 07:10:00 +0800"/>
+ <!-- 静息心率：同日两条验证日均 -->
+ <Record type="HKQuantityTypeIdentifierRestingHeartRate" unit="count/min" value="56" startDate="2026-07-21 06:00:00 +0800" endDate="2026-07-21 06:00:00 +0800"/>
+ <Record type="HKQuantityTypeIdentifierRestingHeartRate" unit="count/min" value="60" startDate="2026-07-21 12:00:00 +0800" endDate="2026-07-21 12:00:00 +0800"/>
+ <!-- HRV -->
+ <Record type="HKQuantityTypeIdentifierHeartRateVariabilitySDNN" unit="ms" value="60" startDate="2026-07-21 05:00:00 +0800" endDate="2026-07-21 05:00:00 +0800"/>
+ <Record type="HKQuantityTypeIdentifierHeartRateVariabilitySDNN" unit="ms" value="66" startDate="2026-07-21 05:30:00 +0800" endDate="2026-07-21 05:30:00 +0800"/>
+ <!-- 步数：同日多段求和 -->
+ <Record type="HKQuantityTypeIdentifierStepCount" unit="count" value="3000" startDate="2026-07-21 08:00:00 +0800" endDate="2026-07-21 09:00:00 +0800"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" unit="count" value="5432" startDate="2026-07-21 12:00:00 +0800" endDate="2026-07-21 13:00:00 +0800"/>
+ <!-- 活动能量：kcal 与 kJ -->
+ <Record type="HKQuantityTypeIdentifierActiveEnergyBurned" unit="kcal" value="300" startDate="2026-07-21 08:00:00 +0800" endDate="2026-07-21 09:00:00 +0800"/>
+ <Record type="HKQuantityTypeIdentifierActiveEnergyBurned" unit="kJ" value="418.4" startDate="2026-07-21 12:00:00 +0800" endDate="2026-07-21 13:00:00 +0800"/>
+ <!-- 睡眠：跨午夜，InBed 不计，AsleepCore+Awake 混合，归到醒来日 2026-07-22 -->
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" value="HKCategoryValueSleepAnalysisInBed" startDate="2026-07-21 23:00:00 +0800" endDate="2026-07-22 07:00:00 +0800"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" value="HKCategoryValueSleepAnalysisAsleepCore" startDate="2026-07-21 23:30:00 +0800" endDate="2026-07-22 03:30:00 +0800"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" value="HKCategoryValueSleepAnalysisAwake" startDate="2026-07-22 03:30:00 +0800" endDate="2026-07-22 04:00:00 +0800"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" value="HKCategoryValueSleepAnalysisAsleepDeep" startDate="2026-07-22 04:00:00 +0800" endDate="2026-07-22 06:30:00 +0800"/>
+ <!-- 训练：跑步（带子元素统计）+ 力量（自闭合） -->
+ <Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" startDate="2026-07-21 18:00:00 +0800" endDate="2026-07-21 18:42:00 +0800">
+  <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="480" unit="kcal"/>
+  <WorkoutStatistics type="HKQuantityTypeIdentifierHeartRate" average="158" maximum="171" unit="count/min"/>
+ </Workout>
+ <Workout workoutActivityType="HKWorkoutActivityTypeTraditionalStrengthTraining" duration="55" durationUnit="min" totalEnergyBurned="320" totalEnergyBurnedUnit="kcal" startDate="2026-07-22 19:00:00 +0800" endDate="2026-07-22 19:55:00 +0800"/>
+ <Workout workoutActivityType="HKWorkoutActivityTypeUnderwaterBasketWeaving" duration="30" durationUnit="min" startDate="2026-07-22 20:00:00 +0800" endDate="2026-07-22 20:30:00 +0800"/>
+</HealthData>

@@ -12,6 +12,8 @@ import { calorieTarget, macrosFor, fuelingGuide, raceWeekStrategy } from '@/lib/
 import { todayISO } from '@/lib/tracking'
 import { computeZones, effectiveHRmax, raceHRStrategy } from '@/lib/heartrate'
 import { applyHealthAutoActions, pullHealth } from '@/lib/health'
+import { mergeHealthPayload } from '@/lib/healthImport'
+import type { HealthDay } from '@/types'
 import {
   SyncError,
   clearSyncToken,
@@ -173,6 +175,18 @@ export function useAppState() {
     }, 2000)
     return () => clearTimeout(timer)
   }, [state])
+
+  /** 导入 Apple 健康导出数据：与既有健康数据合并（既有字段优先），再走幂等自动动作管道 */
+  const importHealthDays = useCallback((importedDays: Record<string, HealthDay>) => {
+    setState((prev) => {
+      const merged = mergeHealthPayload(prev.health.payload, importedDays)
+      const withPayload: AppState = {
+        ...prev,
+        health: { ...prev.health, payload: merged },
+      }
+      return applyHealthAutoActions(withPayload)
+    })
+  }, [])
 
   // ── 同步操作 ──
   const enableSync = useCallback(async (token: string): Promise<void> => {
@@ -458,6 +472,7 @@ export function useAppState() {
     syncStatus,
     health: state.health,
     refreshHealth: pullHealthNow,
+    importHealthDays,
     updateProfile,
     updateSegment,
     rescaleSplits,

@@ -35,6 +35,7 @@ import {
   sortedDays,
 } from '@/lib/health'
 import { relativeTime } from '@/lib/gistSync'
+import { HealthImportCard } from '@/sections/HealthImportCard'
 import { cn } from '@/lib/utils'
 
 export function HealthSection(app: AppStateHook) {
@@ -87,6 +88,7 @@ export function HealthSection(app: AppStateHook) {
             </p>
           </CardContent>
         </Card>
+        <HealthImportCard {...app} />
       </section>
     )
   }
@@ -121,6 +123,8 @@ export function HealthSection(app: AppStateHook) {
           </Badge>
         )}
       </div>
+
+      <HealthImportCard {...app} />
 
       {/* ── 今日卡片 ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
