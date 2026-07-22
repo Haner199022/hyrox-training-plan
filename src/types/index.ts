@@ -22,8 +22,10 @@ export interface Profile {
   division: Division
   /** 目标完赛时间（秒），默认 4800 = 1:20:00 */
   targetSec: number
-  /** 距离比赛周数 6–16，默认 12 */
+  /** 距离比赛周数 6–16，默认 12（raceDate 为空时的回退值） */
   weeksToRace: number
+  /** 比赛日期（ISO YYYY-MM-DD）；设置后优先于 weeksToRace 派生 */
+  raceDate: string | null
 }
 
 export type SegmentKind = 'run' | 'station' | 'roxzone'
@@ -127,7 +129,7 @@ export const DEFAULT_HEALTH: HealthState = {
 }
 
 export interface AppState {
-  version: 7
+  version: 8
   profile: Profile
   splits: Segment[]
   completed: CompletionMap
@@ -171,4 +173,5 @@ export const DEFAULT_PROFILE: Profile = {
   division: 'open',
   targetSec: 4800, // 1:20:00
   weeksToRace: 12,
+  raceDate: '2026-09-11', // HYROX 北京站（用户确认，可编辑；清空则回退为周数派生）
 }

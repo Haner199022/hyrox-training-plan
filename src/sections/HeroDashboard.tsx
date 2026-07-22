@@ -2,7 +2,7 @@ import { CalendarClock, Flag, Flame, Gauge, Scale, TrendingUp } from 'lucide-rea
 import type { AppStateHook } from '@/hooks/useAppState'
 import { fmtHMS, fmtDelta } from '@/lib/time'
 import { sessionKey } from '@/lib/plan'
-import { diffDays, fmtCN, raceDateOf, todayISO } from '@/lib/tracking'
+import { diffDays, effectiveRaceDate, fmtCN, todayISO } from '@/lib/tracking'
 import { cn } from '@/lib/utils'
 
 function StatCard({
@@ -49,7 +49,7 @@ function StatCard({
 
 export function HeroDashboard(app: AppStateHook) {
   const { profile, estimate, feasibility, verdict, plan, completed, calTarget, planStartDate } = app
-  const raceDate = planStartDate ? raceDateOf(planStartDate, profile.weeksToRace) : null
+  const raceDate = effectiveRaceDate(profile, planStartDate)
   const daysLeft = raceDate ? Math.max(0, diffDays(todayISO(), raceDate)) : profile.weeksToRace * 7
 
   // 本周训练进度（第一周）

@@ -224,18 +224,35 @@ export function ProfileSection(app: AppStateHook) {
                 onValueChange={([v]) => updateProfile({ sessionMinutes: v })}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">比赛日期</Label>
+              <Input
+                type="date"
+                value={profile.raceDate ?? ''}
+                onChange={(e) => updateProfile({ raceDate: e.target.value || null })}
+                className="font-num h-9"
+              />
+            </div>
             <div className="col-span-2 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs text-muted-foreground">距离比赛周数</Label>
-                <span className="font-num text-sm font-bold text-primary">{profile.weeksToRace} 周</span>
+                <span className="font-num text-sm font-bold text-primary">
+                  {profile.raceDate ? '由比赛日期自动计算' : `${profile.weeksToRace} 周`}
+                </span>
               </div>
               <Slider
                 value={[profile.weeksToRace]}
                 min={6}
                 max={16}
                 step={1}
+                disabled={!!profile.raceDate}
                 onValueChange={([v]) => updateProfile({ weeksToRace: v })}
               />
+              {profile.raceDate && (
+                <p className="text-[11px] text-muted-foreground">
+                  已设置比赛日期，计划周数按开始日期到比赛日自动校准；清空比赛日期可恢复手动设置。
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

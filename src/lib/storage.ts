@@ -10,7 +10,8 @@ import {
 } from '@/types'
 import { defaultSplits } from './hyrox'
 
-export const STORAGE_KEY = 'hyrox-bj-plan:v7'
+export const STORAGE_KEY = 'hyrox-bj-plan:v8'
+const LEGACY_KEY_V7 = 'hyrox-bj-plan:v7'
 const LEGACY_KEY_V6 = 'hyrox-bj-plan:v6'
 const LEGACY_KEY_V5 = 'hyrox-bj-plan:v5'
 const LEGACY_KEY_V4 = 'hyrox-bj-plan:v4'
@@ -20,7 +21,7 @@ const LEGACY_KEY_V1 = 'hyrox-bj-plan:v1'
 
 export function defaultState(): AppState {
   return {
-    version: 7,
+    version: 8,
     profile: { ...DEFAULT_PROFILE },
     splits: defaultSplits(DEFAULT_PROFILE.sex, DEFAULT_PROFILE.division),
     completed: {},
@@ -42,12 +43,12 @@ export function defaultState(): AppState {
 
 type AnyState = Partial<AppState> & { version?: number }
 
-/** 将任意旧版本（v1–v7）数据规范化为当前 v7 结构 */
+/** 将任意旧版本（v1–v8）数据规范化为当前 v8 结构 */
 function sanitize(parsed: AnyState): AppState {
   const profile = { ...DEFAULT_PROFILE, ...(parsed.profile ?? {}) }
   const nutrition: NutritionPrefs = { ...DEFAULT_NUTRITION, ...(parsed.nutrition ?? {}) }
   return {
-    version: 7,
+    version: 8,
     profile,
     splits:
       Array.isArray(parsed.splits) && parsed.splits.length === 17
@@ -79,7 +80,7 @@ function sanitize(parsed: AnyState): AppState {
 
 export function loadState(): AppState {
   try {
-    for (const key of [STORAGE_KEY, LEGACY_KEY_V6, LEGACY_KEY_V5, LEGACY_KEY_V4, LEGACY_KEY_V3, LEGACY_KEY_V2, LEGACY_KEY_V1]) {
+    for (const key of [STORAGE_KEY, LEGACY_KEY_V7, LEGACY_KEY_V6, LEGACY_KEY_V5, LEGACY_KEY_V4, LEGACY_KEY_V3, LEGACY_KEY_V2, LEGACY_KEY_V1]) {
       const raw = localStorage.getItem(key)
       if (!raw) continue
       const parsed = JSON.parse(raw) as AnyState
@@ -113,6 +114,7 @@ export function saveState(state: AppState): void {
 export function clearState(): void {
   try {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(LEGACY_KEY_V7)
     localStorage.removeItem(LEGACY_KEY_V6)
     localStorage.removeItem(LEGACY_KEY_V5)
     localStorage.removeItem(LEGACY_KEY_V4)

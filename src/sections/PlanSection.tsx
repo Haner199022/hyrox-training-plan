@@ -99,7 +99,7 @@ export function PlanSection(app: AppStateHook) {
         <div>
           <h2 className="text-xl font-bold tracking-tight">
             <CalendarDays className="mr-2 inline h-5 w-5 text-primary" />
-            {profile.weeksToRace} 周训练计划
+            {plan.length} 周训练计划
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             目标配速 {fmtPace(paceSec)} · 每周 {profile.daysPerWeek} 练 · 基础期 → 强化期 → 专项期 → 减量期。

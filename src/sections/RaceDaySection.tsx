@@ -40,7 +40,7 @@ import {
   timelineTime,
   type CheckGroup,
 } from '@/lib/raceday'
-import { fmtCN, raceDateOf } from '@/lib/tracking'
+import { effectiveRaceDate, fmtCN } from '@/lib/tracking'
 import { fmtMS } from '@/lib/time'
 import { ExerciseGif } from '@/components/ExerciseGif'
 import { cn } from '@/lib/utils'
@@ -70,7 +70,7 @@ export function RaceDaySection(app: AppStateHook) {
     resetRaceDay,
   } = app
 
-  const raceDate = planStartDate ? raceDateOf(planStartDate, profile.weeksToRace) : null
+  const raceDate = effectiveRaceDate(profile, planStartDate)
   const preRaceCarbG = Math.round(profile.weightKg * 2)
   const timeline = useMemo(() => buildTimeline(preRaceCarbG), [preRaceCarbG])
   const postRace = useMemo(

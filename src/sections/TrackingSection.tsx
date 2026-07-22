@@ -26,7 +26,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { weightTrajectory } from '@/lib/body'
 import { sessionKey } from '@/lib/plan'
 import { mealKey } from '@/lib/nutrition'
 import {
@@ -34,9 +33,8 @@ import {
   currentStreak,
   dayState,
   diffDays,
-  fmtCN,
+  effectiveRaceDate,
   locateDay,
-  raceDateOf,
   safeRateRange,
   sortWeightLog,
   targetWeightAtDate,
@@ -68,12 +66,17 @@ export function TrackingSection(app: AppStateHook) {
     removeWeightEntry,
     planStartDate,
     setPlanStartDate,
+    updateProfile,
+    trajectory,
   } = app
 
   const today = todayISO()
   const start = planStartDate ?? today
-  const raceDate = raceDateOf(start, profile.weeksToRace)
+  const raceDate = effectiveRaceDate(profile, planStartDate)
+  const daysToRace = raceDate ? diffDays(today, raceDate) : null
   const currentWeekNum = Math.max(1, Math.min(plan.length, Math.floor(diffDays(start, today) / 7) + 1))
+  // 有效周数口径的 profile（轨迹/偏差与计划长度一致）
+  const effProfile = useMemo(() => ({ ...profile, weeksToRace: plan.length }), [profile, plan.length])
 
   const [entryDate, setEntryDate] = useState(today)
   const [entryKg, setEntryKg] = useState('')
@@ -81,8 +84,7 @@ export function TrackingSection(app: AppStateHook) {
   const sorted = useMemo(() => sortWeightLog(weightLog), [weightLog])
   const latest = sorted.length ? sorted[sorted.length - 1] : null
 
-  // ── 体重图表数据 ──
-  const trajectory = useMemo(() => weightTrajectory(profile, verdict), [profile, verdict])
+  // ── 体重图表数据（轨迹由 hook 按有效周数派生）──
   const actualPoints = useMemo(
     () =>
       sorted.map((e) => ({
@@ -95,9 +97,9 @@ export function TrackingSection(app: AppStateHook) {
   // ── 偏差与速率 ──
   const deviation = useMemo(() => {
     if (!latest) return null
-    const target = targetWeightAtDate(profile, verdict, start, latest.date)
+    const target = targetWeightAtDate(effProfile, verdict, start, latest.date)
     return weightDeviation(Math.round((latest.kg - target) * 10) / 10)
-  }, [latest, profile, verdict, start])
+  }, [latest, effProfile, verdict, start])
 
   const rate = useMemo(() => weeklyRateKg(weightLog), [weightLog])
   const [safeLo, safeHi] = safeRateRange(latest?.kg ?? profile.weightKg)
@@ -187,20 +189,37 @@ export function TrackingSection(app: AppStateHook) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">计划开始日期</Label>
-              <Input
-                type="date"
-                value={start}
-                max={today}
-                onChange={(e) => e.target.value && setPlanStartDate(e.target.value)}
-                className="font-num h-9"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">计划开始日期</Label>
+                <Input
+                  type="date"
+                  value={start}
+                  max={today}
+                  onChange={(e) => e.target.value && setPlanStartDate(e.target.value)}
+                  className="font-num h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">比赛日期（可编辑）</Label>
+                <Input
+                  type="date"
+                  value={profile.raceDate ?? ''}
+                  min={today}
+                  onChange={(e) => updateProfile({ raceDate: e.target.value || null })}
+                  className="font-num h-9"
+                />
+              </div>
             </div>
+            {!profile.raceDate && (
+              <p className="text-[11px] text-muted-foreground">未设置比赛日期，按「开始日期 + 周数」推算。</p>
+            )}
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-lg border p-2.5">
-                <div className="text-[11px] text-muted-foreground">比赛日期</div>
-                <div className="font-num mt-0.5 font-bold text-primary">{fmtCN(raceDate)}</div>
+                <div className="text-[11px] text-muted-foreground">距比赛</div>
+                <div className="font-num mt-0.5 font-bold text-primary">
+                  {daysToRace !== null ? `${Math.max(0, daysToRace)} 天` : '—'}
+                </div>
               </div>
               <div className="rounded-lg border p-2.5">
                 <div className="text-[11px] text-muted-foreground">当前进度</div>
@@ -341,9 +360,9 @@ export function TrackingSection(app: AppStateHook) {
                 <XAxis
                   type="number"
                   dataKey="week"
-                  domain={[0, profile.weeksToRace]}
+                  domain={[0, plan.length]}
                   tick={{ fontSize: 11, fill: 'hsl(240 5% 60%)' }}
-                  tickFormatter={(v: number) => (v === 0 ? '开始' : v === profile.weeksToRace ? '比赛' : `W${v}`)}
+                  tickFormatter={(v: number) => (v === 0 ? '开始' : v === plan.length ? '比赛' : `W${v}`)}
                 />
                 <YAxis
                   type="number"

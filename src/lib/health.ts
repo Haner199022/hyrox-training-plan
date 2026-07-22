@@ -5,7 +5,7 @@ import { GIST_HEALTH_FILENAME, ghGet } from './gistSync'
 import { weightVerdict } from './body'
 import { targetPaceSecPerKm } from './hyrox'
 import { generatePlan, sessionKey } from './plan'
-import { locateDay } from './tracking'
+import { effectivePlanWeeks, locateDay } from './tracking'
 
 // ── 容忍式解析 ───────────────────────────────────────────
 
@@ -228,10 +228,12 @@ export function applyHealthAutoActions(state: AppState): AppState {
   }
   let changed = false
 
-  // 计划（与 useAppState 派生逻辑一致）
-  const verdict = weightVerdict(state.profile)
-  const cuttingWeeks = verdict.needCut ? Math.min(verdict.weeksNeeded + 1, state.profile.weeksToRace - 2) : 0
-  const plan = generatePlan(state.profile, targetPaceSecPerKm(state.splits), cuttingWeeks)
+  // 计划（与 useAppState 派生逻辑一致，使用有效周数）
+  const effWeeks = effectivePlanWeeks(state.profile, state.planStartDate)
+  const effProfile = { ...state.profile, weeksToRace: effWeeks }
+  const verdict = weightVerdict(effProfile)
+  const cuttingWeeks = verdict.needCut ? Math.min(verdict.weeksNeeded + 1, effWeeks - 2) : 0
+  const plan = generatePlan(effProfile, targetPaceSecPerKm(state.splits), cuttingWeeks)
 
   const loggedDates = new Set(weightLog.map((e) => e.date))
 
@@ -246,7 +248,7 @@ export function applyHealthAutoActions(state: AppState): AppState {
 
     // 2) 训练自动打卡
     if (!day.workouts?.length) continue
-    const loc = locateDay(state.planStartDate, state.profile.weeksToRace, date)
+    const loc = locateDay(state.planStartDate, effWeeks, date)
     if (!loc) continue
     const dayKey = sessionKey(loc.week, loc.dayIndex)
     const matchKey = `${MATCH_KEY_PREFIX}${date}`

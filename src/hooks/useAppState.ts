@@ -9,7 +9,7 @@ import { weightVerdict, weightTrajectory } from '@/lib/body'
 import { generatePlan } from '@/lib/plan'
 import { targetPaceSecPerKm } from '@/lib/hyrox'
 import { calorieTarget, macrosFor, fuelingGuide, raceWeekStrategy } from '@/lib/nutrition'
-import { todayISO } from '@/lib/tracking'
+import { todayISO, effectivePlanWeeks } from '@/lib/tracking'
 import { computeZones, effectiveHRmax, raceHRStrategy } from '@/lib/heartrate'
 import { applyHealthAutoActions, pullHealth } from '@/lib/health'
 import { mergeHealthPayload } from '@/lib/healthImport'
@@ -428,14 +428,17 @@ export function useAppState() {
 
   // ── 派生数据 ──────────────────────────────────────────────
   const derived = useMemo(() => {
-    const estimate = estimateRace(state.profile)
-    const feasibility = assessFeasibility(estimate, state.profile)
-    const verdict = weightVerdict(state.profile)
-    const trajectory = weightTrajectory(state.profile, verdict)
+    // 有效周数：比赛日期设置后自动校准，全部派生计算统一使用
+    const effWeeks = effectivePlanWeeks(state.profile, state.planStartDate)
+    const effProfile = { ...state.profile, weeksToRace: effWeeks }
+    const estimate = estimateRace(effProfile)
+    const feasibility = assessFeasibility(estimate, effProfile)
+    const verdict = weightVerdict(effProfile)
+    const trajectory = weightTrajectory(effProfile, verdict)
     const paceSec = targetPaceSecPerKm(state.splits)
     // 减重窗口：需要减重时按安全速率所需周数
-    const cuttingWeeks = verdict.needCut ? Math.min(verdict.weeksNeeded + 1, state.profile.weeksToRace - 2) : 0
-    const plan = generatePlan(state.profile, paceSec, cuttingWeeks)
+    const cuttingWeeks = verdict.needCut ? Math.min(verdict.weeksNeeded + 1, effWeeks - 2) : 0
+    const plan = generatePlan(effProfile, paceSec, cuttingWeeks)
     // ── 营养派生 ──
     const calTarget = calorieTarget(state.profile, verdict, state.nutrition)
     const macros = macrosFor(calTarget.kcal, state.profile, state.nutrition)
@@ -449,8 +452,9 @@ export function useAppState() {
       estimate, feasibility, verdict, trajectory, paceSec, plan, cuttingWeeks,
       calTarget, macros, fueling, raceWeek,
       hrmax, hrmaxIsOverride, zoneResult, raceHR,
+      effWeeks,
     }
-  }, [state.profile, state.splits, state.nutrition, state.hrMaxOverride, state.restingHr])
+  }, [state.profile, state.splits, state.nutrition, state.hrMaxOverride, state.restingHr, state.planStartDate])
 
   return {
     state,

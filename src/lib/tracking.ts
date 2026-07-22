@@ -35,6 +35,33 @@ export function raceDateOf(startISO: string, weeks: number): string {
   return addDays(startISO, weeks * 7)
 }
 
+/**
+ * 有效比赛日期：profile.raceDate 优先；否则回退为 planStartDate + 周数派生。
+ */
+export function effectiveRaceDate(
+  profile: { raceDate: string | null; weeksToRace: number },
+  planStartDate: string | null,
+): string | null {
+  if (profile.raceDate) return profile.raceDate
+  if (planStartDate) return raceDateOf(planStartDate, profile.weeksToRace)
+  return null
+}
+
+/**
+ * 有效计划周数：raceDate 与 planStartDate 都已知时，按两日期间隔自动校准
+ * （四舍五入到整周，限制在 4–20 周）；否则回退为用户设置的周数。
+ */
+export function effectivePlanWeeks(
+  profile: { raceDate: string | null; weeksToRace: number },
+  planStartDate: string | null,
+): number {
+  if (profile.raceDate && planStartDate) {
+    const days = diffDays(planStartDate, profile.raceDate)
+    return Math.max(4, Math.min(20, Math.round(days / 7)))
+  }
+  return profile.weeksToRace
+}
+
 export function fmtCN(iso: string): string {
   const [y, m, d] = iso.split('-')
   return `${y} 年 ${Number(m)} 月 ${Number(d)} 日`
