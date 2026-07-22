@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 动作演示媒体 © Gym visual — https://gymvisual.com/
+# 权利人书面再分发许可不延伸至本项目；本地保留仅供个人使用，待取得书面授权前不得提交/公开分发
+public/exercises/
