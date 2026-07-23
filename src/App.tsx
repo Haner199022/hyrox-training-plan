@@ -1,5 +1,6 @@
 import { Flame, RotateCcw } from 'lucide-react'
 import { useAppState } from '@/hooks/useAppState'
+import { TodaySection } from '@/sections/TodaySection'
 import { HeroDashboard } from '@/sections/HeroDashboard'
 import { ProfileSection } from '@/sections/ProfileSection'
 import { HeartRateSection } from '@/sections/HeartRateSection'
@@ -69,7 +70,11 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-10 px-4 py-6 sm:px-6">
-        <HeroDashboard {...app} />
+        <TodaySection {...app} />
+        <Separator />
+        <div id="dashboard" className="scroll-mt-20">
+          <HeroDashboard {...app} />
+        </div>
         <Separator />
         <ProfileSection {...app} />
         <Separator />

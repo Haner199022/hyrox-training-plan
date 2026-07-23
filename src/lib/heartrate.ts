@@ -131,3 +131,24 @@ export const SESSION_ZONE: Record<string, ZoneId | 'Z4-Z5' | 'race' | null> = {
   simulation: 'race',
   rest: null,
 }
+
+/** 生成训练科目的心率提示文案（PlanSection / TodaySection 共用） */
+export function hrLineForSession(
+  type: string,
+  zoneResult: ZoneResult,
+  raceHR: RaceHRStrategy,
+): string | null {
+  const mapping = SESSION_ZONE[type]
+  if (!mapping) return null
+  if (mapping === 'race') {
+    return `比赛心率：跑步 ${raceHR.runRange[0]}–${raceHR.runRange[1]} / 站点 ≤${raceHR.stationRange[1]} bpm`
+  }
+  if (mapping === 'Z4-Z5') {
+    const z4 = zoneResult.zones.find((z) => z.id === 'Z4')
+    const z5 = zoneResult.zones.find((z) => z.id === 'Z5')
+    if (!z4 || !z5) return null
+    return `心率 Z4–Z5 · ${z4.range[0]}–${z5.range[1]} bpm`
+  }
+  const z = zoneResult.zones.find((x) => x.id === mapping)
+  return z ? `心率 ${z.id} · ${z.range[0]}–${z.range[1]} bpm` : null
+}

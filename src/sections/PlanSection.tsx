@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { sessionKey, type SessionType, type WeekPlan } from '@/lib/plan'
 import { fmtPace } from '@/lib/time'
-import { SESSION_ZONE, type ZoneId } from '@/lib/heartrate'
+import { hrLineForSession } from '@/lib/heartrate'
 import { routineForSession } from '@/lib/recovery'
 import { ExerciseGif } from '@/components/ExerciseGif'
 import { cn } from '@/lib/utils'
@@ -66,21 +66,7 @@ export function PlanSection(app: AppStateHook) {
   const week = plan[Math.min(activeWeek, plan.length) - 1]
 
   // 训练科目 → 心率区间文案
-  const hrLine = (type: SessionType): string | null => {
-    const mapping = SESSION_ZONE[type]
-    if (!mapping) return null
-    if (mapping === 'race') {
-      return `比赛心率：跑步 ${raceHR.runRange[0]}–${raceHR.runRange[1]} / 站点 ≤${raceHR.stationRange[1]} bpm`
-    }
-    if (mapping === 'Z4-Z5') {
-      const z4 = zoneResult.zones.find((z) => z.id === 'Z4')
-      const z5 = zoneResult.zones.find((z) => z.id === 'Z5')
-      if (!z4 || !z5) return null
-      return `心率 Z4–Z5 · ${z4.range[0]}–${z5.range[1]} bpm`
-    }
-    const z = zoneResult.zones.find((x) => x.id === (mapping as ZoneId))
-    return z ? `心率 ${z.id} · ${z.range[0]}–${z.range[1]} bpm` : null
-  }
+  const hrLine = (type: SessionType): string | null => hrLineForSession(type, zoneResult, raceHR)
 
   const overall = useMemo(() => {
     let done = 0
